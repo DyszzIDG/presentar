@@ -1555,14 +1555,16 @@ const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [mode, setMode] = useState('register'); // Default to register as per image
-  const [role, setRole] = useState('student');
+  const [mode, setMode] = useState('register');
+  // Rol por defecto 'student'
+  const [role, setRole] = useState('student'); 
   const [newUser, setNewUser] = useState({ username: '', email: '', password: '', confirmPassword: '' });
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
     const db = getDatabase();
+    // Nota: La validación de roles y planes se hace en el Dashboard/ProtectedRoute
     const user = db?.users.find(u => u.email === email && u.password === password);
 
     if (user) {
@@ -1572,6 +1574,261 @@ const Login = ({ onLogin }) => {
       setError('Credenciales inválidas');
     }
   };
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    if (newUser.password !== newUser.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    const db = getDatabase();
+    if (db.users.find(u => u.email === newUser.email)) {
+      setError('El email ya está registrado');
+      return;
+    }
+
+    const user = {
+      id: Date.now().toString(),
+      username: newUser.username,
+      email: newUser.email,
+      password: newUser.password,
+      // Guarda el rol seleccionado (student/teacher/company)
+      role: role, 
+      plan: 'free',
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedDb = { ...db, users: [...db.users, user] };
+    saveDatabase(updatedDb);
+    onLogin(user);
+    navigate('/dashboard');
+  };
+
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 relative">
+      <div className="absolute top-6 left-6 flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/')}>
+        <div className="bg-cyan-500 p-1.5 rounded-lg">
+          <Code className="text-white" size={20} />
+        </div>
+        <span className="text-xl font-bold text-slate-900">EduCodeHub</span>
+      </div>
+
+      <div className="w-full max-w-md">
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">
+              {mode === 'login' ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
+            </h2>
+            <p className="text-gray-600">
+              {mode === 'login'
+                ? 'Ingresa a tu cuenta para continuar'
+                : 'Únete a nuestra comunidad de desarrolladores'}
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          {mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-900/20"
+              >
+                Iniciar Sesión
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-6">
+              <div className="mb-6">
+                <h3 className="text-md font-semibold text-gray-700 mb-3">Selecciona tu Rol</h3>
+                <div className="grid grid-cols-3 gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setRole('student')}
+                        className={`w-full p-3 rounded-xl border-2 text-center transition text-sm ${role === 'student'
+                            ? 'border-cyan-500 bg-cyan-50 text-cyan-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                    >
+                        Estudiante
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('teacher')}
+                        className={`w-full p-3 rounded-xl border-2 text-center transition text-sm ${role === 'teacher'
+                            ? 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                    >
+                        Docente
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('company')}
+                        className={`w-full p-3 rounded-xl border-2 text-center transition text-sm ${role === 'company'
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                    >
+                        Empresa
+                    </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de Usuario</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="Usuario"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="tu@email.com"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contraseña</label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="••••••••"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  placeholder="••••••••"
+                  value={newUser.confirmPassword}
+                  onChange={(e) => setNewUser({ ...newUser, confirmPassword: e.target.value })}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-cyan-500 text-white py-3 rounded-lg font-bold hover:bg-cyan-600 transition shadow-lg shadow-cyan-500/30"
+              >
+                Crear Cuenta
+              </button>
+            </form>
+          )}
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
+              {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
+              <button
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login');
+                  setError('');
+                }}
+                className="ml-2 text-cyan-600 font-bold hover:text-cyan-700"
+              >
+                {mode === 'login' ? 'Regístrate' : 'Inicia Sesión'}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ForumSection = () => {
+  const topics = [
+    { id: 1, title: 'Problemas de CORS con Node.js y React', author: 'dev_master', replies: 15, views: 240, tags: ['Backend', 'Security'] },
+    { id: 2, title: 'Mejores prácticas para nombrar componentes en React', author: 'ui_wizard', replies: 8, views: 120, tags: ['Frontend', 'React'] },
+    { id: 3, title: 'Configuración de Nginx como Reverse Proxy para microservicios', author: 'sysadmin_x', replies: 22, views: 350, tags: ['DevOps', 'Server'] },
+    { id: 4, title: 'Diferencias entre useState y useReducer', author: 'frontend_ninja', replies: 5, views: 80, tags: ['React', 'Hooks'] },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-900">Foro de la Comunidad 💬</h2>
+        <button className="bg-cyan-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-cyan-600 transition flex items-center">
+          <Plus size={18} className="mr-2" />
+          Nuevo Tema
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 w-1/2">Tema</th>
+              <th className="px-6 py-3">Autor</th>
+              <th className="px-6 py-3 text-center">Respuestas</th>
+              <th className="px-6 py-3">Tags</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {topics.map(topic => (
+              <tr key={topic.id} className="hover:bg-gray-50 cursor-pointer">
+                <td className="px-6 py-4 whitespace-normal">
+                  <p className="font-bold text-slate-900">{topic.title}</p>
+                  <p className="text-sm text-gray-500">{topic.views} Vistas</p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{topic.author}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-cyan-600">{topic.replies}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex gap-1.5">
+                    {topic.tags.map(tag => (
+                      <span key={tag} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
   const handleRegister = (e) => {
     e.preventDefault();
