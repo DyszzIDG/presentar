@@ -43,7 +43,38 @@ const initializeDatabase = () => {
         iconName: 'Shield',
         tags: ['Node.js', 'Express', 'Security'],
         imageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80',
-        codeSnippet: `const jwt = require('jsonwebtoken');\n\nfunction generateToken(user) {\n  return jwt.sign({ id: user.id }, process.env.JWT_SECRET, {\n    expiresIn: '1h'\n  });\n}`
+        fileExtension: 'js',
+        codeSnippet: `const jwt = require('jsonwebtoken');
+const express = require('express');
+const router = express.Router();
+
+const generateToken = (user) => {
+  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
+    expiresIn: '1h'
+  });
+};
+
+const authMiddleware = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Access denied' });
+
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
+    next();
+  } catch (err) {
+    res.status(400).json({ error: 'Invalid token' });
+  }
+};
+
+router.post('/login', async (req, res) => {
+  // Mock user validation
+  const user = { id: 1, role: 'user' }; 
+  const token = generateToken(user);
+  res.json({ token });
+});
+
+module.exports = { router, authMiddleware };`
       },
       {
         id: '2',
@@ -56,7 +87,39 @@ const initializeDatabase = () => {
         iconName: 'Zap',
         tags: ['Stripe', 'Payments', 'API'],
         imageUrl: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=800&q=80',
-        codeSnippet: `const stripe = require('stripe')(process.env.STRIPE_KEY);\n\napp.post('/create-checkout-session', async (req, res) => {\n  const session = await stripe.checkout.sessions.create({...});\n  res.json({ id: session.id });\n});`
+        fileExtension: 'js',
+        codeSnippet: `const express = require('express');
+const stripe = require('stripe')(process.env.STRIPE_KEY);
+const router = express.Router();
+
+router.post('/create-checkout-session', async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Premium Subscription',
+            },
+            unit_amount: 2000,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: 'https://yourdomain.com/success',
+      cancel_url: 'https://yourdomain.com/cancel',
+    });
+
+    res.json({ id: session.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;`
       },
       {
         id: '3',
@@ -69,7 +132,777 @@ const initializeDatabase = () => {
         iconName: 'Layout',
         tags: ['React', 'Tailwind', 'UI/UX'],
         imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-        codeSnippet: `export default function Dashboard() {\n  return (\n    <div className="flex h-screen bg-gray-50">\n      <Sidebar />\n      <MainContent />\n    </div>\n  );\n}`
+        fileExtension: 'jsx',
+        codeSnippet: `import React, { useState } from 'react';
+import { Home, Users, Settings, LogOut } from 'lucide-react';
+
+const Sidebar = () => (
+  <div className="w-64 bg-gray-900 text-white h-screen p-4">
+    <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
+    <nav className="space-y-2">
+      <a href="#" className="flex items-center space-x-2 p-2 hover:bg-gray-800 rounded"><Home size={20} /> <span>Home</span></a>
+      <a href="#" className="flex items-center space-x-2 p-2 hover:bg-gray-800 rounded"><Users size={20} /> <span>Users</span></a>
+      <a href="#" className="flex items-center space-x-2 p-2 hover:bg-gray-800 rounded"><Settings size={20} /> <span>Settings</span></a>
+    </nav>
+  </div>
+);
+
+export default function Dashboard() {
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar />
+      <main className="flex-1 p-8">
+        <h2 className="text-3xl font-bold mb-6">Welcome Back</h2>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-gray-500 text-sm">Total Users</h3>
+            <p className="text-3xl font-bold">1,234</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-gray-500 text-sm">Revenue</h3>
+            <p className="text-3xl font-bold">$12,345</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="text-gray-500 text-sm">Active Sessions</h3>
+            <p className="text-3xl font-bold">456</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}`
+      },
+      {
+        id: '4',
+        title: 'Email Service Node',
+        description: 'Microservicio para envío de correos transaccionales usando Nodemailer y plantillas HTML.',
+        category: 'Backend',
+        author: 'dev_master',
+        price: 15.00,
+        rating: 4.5,
+        iconName: 'Box',
+        tags: ['Node.js', 'Nodemailer', 'SMTP'],
+        imageUrl: 'https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'js',
+        codeSnippet: `const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+const sendEmail = async (to, subject, html) => {
+  try {
+    const info = await transporter.sendMail({
+      from: '"My App" <noreply@myapp.com>',
+      to,
+      subject,
+      html
+    });
+    console.log('Message sent: %s', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+module.exports = { sendEmail };`
+      },
+      {
+        id: '5',
+        title: 'Docker Compose Stack',
+        description: 'Configuración completa de Docker Compose para Node.js, MongoDB y Redis.',
+        category: 'DevOps',
+        author: 'ops_guru',
+        price: 0,
+        rating: 4.9,
+        iconName: 'Server',
+        tags: ['Docker', 'DevOps', 'Containers'],
+        imageUrl: 'https://images.unsplash.com/photo-1605745341112-85968b19335b?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'yml',
+        codeSnippet: `version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/myapp
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo-data:`
+      },
+      {
+        id: '6',
+        title: 'Chat Server Socket.io',
+        description: 'Servidor de chat en tiempo real con salas privadas y persistencia de mensajes.',
+        category: 'Backend',
+        author: 'realtime_dev',
+        price: 25.50,
+        rating: 4.6,
+        iconName: 'Zap',
+        tags: ['Socket.io', 'Node.js', 'WebSockets'],
+        imageUrl: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'js',
+        codeSnippet: `const http = require('http');
+const { Server } = require('socket.io');
+
+const httpServer = http.createServer();
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_room', (room) => {
+    socket.join(room);
+    console.log(\`User \${socket.id} joined room \${room}\`);
+  });
+
+  socket.on('send_message', (data) => {
+    // data = { room, message, author, time }
+    socket.to(data.room).emit('receive_message', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+httpServer.listen(3001, () => {
+  console.log('Socket.io server running on port 3001');
+});`
+      },
+      {
+        id: '7',
+        title: 'Kanban Board React',
+        description: 'Tablero tipo Trello con drag & drop fluido usando React Beautiful Dnd.',
+        category: 'Frontend',
+        author: 'ui_wizard',
+        price: 19.99,
+        rating: 4.8,
+        iconName: 'Layout',
+        tags: ['React', 'DnD', 'Productivity'],
+        imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'jsx',
+        codeSnippet: `import React, { useState } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+
+const initialData = {
+  tasks: {
+    'task-1': { id: 'task-1', content: 'Take out the garbage' },
+    'task-2': { id: 'task-2', content: 'Watch my favorite show' },
+  },
+  columns: {
+    'column-1': {
+      id: 'column-1',
+      title: 'To do',
+      taskIds: ['task-1', 'task-2'],
+    },
+  },
+  columnOrder: ['column-1'],
+};
+
+export default function KanbanBoard() {
+  const [data, setData] = useState(initialData);
+
+  const onDragEnd = (result) => {
+    // Reordering logic here...
+  };
+
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      {data.columnOrder.map(columnId => {
+        const column = data.columns[columnId];
+        const tasks = column.taskIds.map(taskId => data.tasks[taskId]);
+        return (
+          <div key={column.id} className="m-2 p-2 border rounded bg-gray-100 w-64">
+            <h3 className="font-bold mb-2">{column.title}</h3>
+            <Droppable droppableId={column.id}>
+              {(provided) => (
+                <div ref={provided.innerRef} {...provided.droppableProps} className="min-h-[100px]">
+                  {tasks.map((task, index) => (
+                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className="p-2 mb-2 bg-white rounded shadow"
+                        >
+                          {task.content}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
+        );
+      })}
+    </DragDropContext>
+  );
+}`
+      },
+      {
+        id: '8',
+        title: 'AWS S3 Uploader',
+        description: 'Módulo reutilizable para subir, listar y eliminar archivos en Amazon S3.',
+        category: 'Backend',
+        author: 'cloud_architect',
+        price: 12.00,
+        rating: 4.4,
+        iconName: 'Cloud',
+        tags: ['AWS', 'S3', 'Cloud'],
+        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'js',
+        codeSnippet: `const AWS = require('aws-sdk');
+
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
+  region: 'us-east-1'
+});
+
+const uploadFile = (fileName, fileContent) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: fileName,
+    Body: fileContent
+  };
+  return s3.upload(params).promise();
+};
+
+const getFile = (fileName) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: fileName
+  };
+  return s3.getObject(params).promise();
+};
+
+module.exports = { uploadFile, getFile };`
+      },
+      {
+        id: '9',
+        title: 'Animated Landing Page',
+        description: 'Landing page de alta conversión con animaciones Framer Motion y diseño responsive.',
+        category: 'Frontend',
+        author: 'design_pro',
+        price: 35.00,
+        rating: 4.9,
+        iconName: 'Globe',
+        tags: ['React', 'Framer Motion', 'Landing'],
+        imageUrl: 'https://images.unsplash.com/photo-1547658719-da2b51169166?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'jsx',
+        codeSnippet: `import React from 'react';
+import { motion } from 'framer-motion';
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center text-white">
+      <div className="text-center">
+        <motion.h1
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-6xl font-bold mb-6"
+        >
+          Bienvenido al Futuro
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.8 }}
+          className="text-xl mb-8 max-w-2xl mx-auto"
+        >
+          Construimos experiencias digitales que transforman negocios y conectan personas.
+        </motion.p>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="bg-white text-purple-600 px-8 py-3 rounded-full font-bold text-lg shadow-lg"
+        >
+          Empezar Ahora
+        </motion.button>
+      </div>
+    </div>
+  );
+}`
+      },
+      {
+        id: '10',
+        title: 'CI/CD GitHub Actions',
+        description: 'Pipeline completo para testear y desplegar aplicaciones Node.js automáticamente.',
+        category: 'DevOps',
+        author: 'ops_guru',
+        price: 9.99,
+        rating: 4.7,
+        iconName: 'GitBranch',
+        tags: ['GitHub Actions', 'CI/CD', 'Automation'],
+        imageUrl: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'yml',
+        codeSnippet: `name: Node.js CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Use Node.js \${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: \${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to Production
+        run: echo "Deploying to production server..."
+        # Add your deployment commands here (e.g., SSH, AWS CLI)`
+      },
+      {
+        id: '11',
+        title: 'GraphQL API Starter',
+        description: 'Boilerplate para API GraphQL con Apollo Server, TypeDefs y Resolvers.',
+        category: 'Backend',
+        author: 'api_lover',
+        price: 0,
+        rating: 4.3,
+        iconName: 'Code',
+        tags: ['GraphQL', 'Apollo', 'API'],
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-efc5e60fc549?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'js',
+        codeSnippet: `const { ApolloServer, gql } = require('apollo-server');
+
+const typeDefs = gql\`
+  type Book {
+    title: String
+    author: String
+  }
+
+  type Query {
+    books: [Book]
+  }
+\`;
+
+const books = [
+  { title: 'The Awakening', author: 'Kate Chopin' },
+  { title: 'City of Glass', author: 'Paul Auster' },
+];
+
+const resolvers = {
+  Query: {
+    books: () => books,
+  },
+};
+
+const server = new ApolloServer({ typeDefs, resolvers });
+
+server.listen().then(({ url }) => {
+  console.log(\`🚀  Server ready at \${url}\`);
+});`
+      },
+      {
+        id: '12',
+        title: 'Nginx Reverse Proxy',
+        description: 'Configuración optimizada de Nginx como proxy reverso con SSL y balanceo de carga.',
+        category: 'DevOps',
+        author: 'sysadmin_x',
+        price: 18.00,
+        rating: 4.6,
+        iconName: 'Server',
+        tags: ['Nginx', 'Proxy', 'Server'],
+        imageUrl: 'https://images.unsplash.com/photo-1558494949-efc5e60fc549?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'conf',
+        codeSnippet: `server {
+    listen 80;
+    server_name example.com www.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name example.com;
+
+    ssl_certificate /etc/nginx/ssl/example.com.crt;
+    ssl_certificate_key /etc/nginx/ssl/example.com.key;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}`
+      },
+      {
+        id: '13',
+        title: 'E-commerce Product Card',
+        description: 'Componente de tarjeta de producto con galería de imágenes, selección de tallas y botón de compra.',
+        category: 'Frontend',
+        author: 'frontend_ninja',
+        price: 8.50,
+        rating: 4.5,
+        iconName: 'Box',
+        tags: ['React', 'E-commerce', 'UI'],
+        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'jsx',
+        codeSnippet: `import React from 'react';
+
+const ProductCard = ({ product }) => {
+  return (
+    <div className="max-w-sm rounded overflow-hidden shadow-lg bg-white">
+      <img className="w-full h-48 object-cover" src={product.image} alt={product.name} />
+      <div className="px-6 py-4">
+        <div className="font-bold text-xl mb-2">{product.name}</div>
+        <p className="text-gray-700 text-base">
+          {product.description}
+        </p>
+      </div>
+      <div className="px-6 pt-4 pb-2 flex justify-between items-center">
+        <span className="text-2xl font-bold text-gray-900">\${product.price}</span>
+        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ProductCard;`
+      },
+      {
+        id: '14',
+        title: 'Redis Cache Layer',
+        description: 'Capa de caché eficiente usando Redis para acelerar respuestas de API.',
+        category: 'Backend',
+        author: 'perf_master',
+        price: 22.00,
+        rating: 4.8,
+        iconName: 'Zap',
+        tags: ['Redis', 'Cache', 'Performance'],
+        imageUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'js',
+        codeSnippet: `const redis = require('redis');
+const client = redis.createClient(process.env.REDIS_URL);
+
+client.on('error', (err) => console.log('Redis Client Error', err));
+
+await client.connect();
+
+const getCachedData = async (key, fetchFunction) => {
+  try {
+    const cachedData = await client.get(key);
+    if (cachedData) {
+      console.log('Cache hit');
+      return JSON.parse(cachedData);
+    }
+
+    console.log('Cache miss');
+    const freshData = await fetchFunction();
+    await client.set(key, JSON.stringify(freshData), {
+      EX: 3600 // Expire in 1 hour
+    });
+    return freshData;
+  } catch (err) {
+    console.error('Cache error:', err);
+    return await fetchFunction();
+  }
+};
+
+module.exports = { getCachedData };`
+      },
+      {
+        id: '15',
+        title: 'Kubernetes Deployment',
+        description: 'Manifiestos K8s listos para producción: Deployment, Service e Ingress.',
+        category: 'DevOps',
+        author: 'k8s_fan',
+        price: 45.00,
+        rating: 4.9,
+        iconName: 'Cloud',
+        tags: ['Kubernetes', 'K8s', 'Orchestration'],
+        imageUrl: 'https://images.unsplash.com/photo-1667372393119-c85c020799a3?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'yaml',
+        codeSnippet: `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app
+        image: my-app:1.0.0
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  selector:
+    app: my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer`
+      },
+      {
+        id: '16',
+        title: 'Python Data Scraper',
+        description: 'Script de Python con BeautifulSoup para extraer datos de sitios web.',
+        category: 'Backend',
+        author: 'data_miner',
+        price: 10.00,
+        rating: 4.2,
+        iconName: 'Code',
+        tags: ['Python', 'Scraping', 'BeautifulSoup'],
+        imageUrl: 'https://images.unsplash.com/photo-1649180556628-9ba704115795?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'py',
+        codeSnippet: `import requests
+from bs4 import BeautifulSoup
+import csv
+
+def scrape_data(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    products = []
+    for item in soup.select('.product-item'):
+        name = item.select_one('.product-title').text.strip()
+        price = item.select_one('.price').text.strip()
+        products.append({'name': name, 'price': price})
+    
+    return products
+
+if __name__ == "__main__":
+    data = scrape_data('https://example.com/products')
+    
+    with open('products.csv', 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['name', 'price'])
+        writer.writeheader()
+        writer.writerows(data)
+    
+    print(f"Scraped {len(data)} items.")`
+      },
+      {
+        id: '17',
+        title: 'Vue.js Todo App',
+        description: 'Componente Vue 3 con Composition API para una lista de tareas.',
+        category: 'Frontend',
+        author: 'vue_master',
+        price: 0,
+        rating: 4.6,
+        iconName: 'Layout',
+        tags: ['Vue.js', 'Frontend', 'Composition API'],
+        imageUrl: 'https://images.unsplash.com/photo-1607799275518-d58665d099db?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'vue',
+        codeSnippet: `<template>
+  <div class="todo-app">
+    <h1>Todo List</h1>
+    <input v-model="newTask" @keyup.enter="addTask" placeholder="Add a task" />
+    <ul>
+      <li v-for="task in tasks" :key="task.id">
+        <span :class="{ done: task.completed }">{{ task.text }}</span>
+        <button @click="toggleTask(task.id)">Done</button>
+        <button @click="removeTask(task.id)">Delete</button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue';
+
+const newTask = ref('');
+const tasks = ref([]);
+
+const addTask = () => {
+  if (newTask.value.trim()) {
+    tasks.value.push({ id: Date.now(), text: newTask.value, completed: false });
+    newTask.value = '';
+  }
+};
+
+const toggleTask = (id) => {
+  const task = tasks.value.find(t => t.id === id);
+  if (task) task.completed = !task.completed;
+};
+
+const removeTask = (id) => {
+  tasks.value = tasks.value.filter(t => t.id !== id);
+};
+</script>
+
+<style scoped>
+.done { text-decoration: line-through; }
+</style>`
+      },
+      {
+        id: '18',
+        title: 'Go Microservice HTTP',
+        description: 'Servidor HTTP básico en Go con manejo de rutas y JSON.',
+        category: 'Backend',
+        author: 'gopher',
+        price: 20.00,
+        rating: 4.7,
+        iconName: 'Server',
+        tags: ['Go', 'Golang', 'Backend'],
+        imageUrl: 'https://images.unsplash.com/photo-1623479322729-28b25c16b011?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'go',
+        codeSnippet: `package main
+
+import (
+    "encoding/json"
+    "log"
+    "net/http"
+)
+
+type Response struct {
+    Message string \`json:"message"\`
+}
+
+func helloHandler(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(Response{Message: "Hello from Go!"})
+}
+
+func main() {
+    http.HandleFunc("/hello", helloHandler)
+    
+    log.Println("Server starting on :8080")
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+        log.Fatal(err)
+    }
+}`
+      },
+      {
+        id: '19',
+        title: 'SQL Database Schema',
+        description: 'Script SQL para crear un esquema de base de datos de usuarios y pedidos.',
+        category: 'Backend',
+        author: 'db_admin',
+        price: 5.00,
+        rating: 4.4,
+        iconName: 'Box',
+        tags: ['SQL', 'Database', 'Schema'],
+        imageUrl: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'sql',
+        codeSnippet: `CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);`
+      },
+      {
+        id: '20',
+        title: 'Bash Backup Script',
+        description: 'Script de shell para automatizar copias de seguridad de directorios.',
+        category: 'DevOps',
+        author: 'sysadmin_y',
+        price: 0,
+        rating: 4.5,
+        iconName: 'FileText',
+        tags: ['Bash', 'Shell', 'Backup'],
+        imageUrl: 'https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&w=800&q=80',
+        fileExtension: 'sh',
+        codeSnippet: `#!/bin/bash
+
+SOURCE_DIR="/var/www/html"
+BACKUP_DIR="/backups"
+DATE=$(date +%Y-%m-%d_%H-%M-%S)
+BACKUP_FILE="$BACKUP_DIR/backup_$DATE.tar.gz"
+
+echo "Starting backup of $SOURCE_DIR..."
+
+# Create backup directory if it doesn't exist
+mkdir -p $BACKUP_DIR
+
+# Create compressed archive
+tar -czf $BACKUP_FILE $SOURCE_DIR
+
+if [ $? -eq 0 ]; then
+    echo "Backup completed successfully: $BACKUP_FILE"
+else
+    echo "Backup failed!"
+    exit 1
+fi
+
+# Delete backups older than 7 days
+find $BACKUP_DIR -type f -name "backup_*.tar.gz" -mtime +7 -delete`
       }
     ]
   };
@@ -285,6 +1118,8 @@ const Marketplace = ({ user, onLogout }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('All');
   const [selectedService, setSelectedService] = useState(null);
+  // Nuevo estado para la simulación: 'idle', 'pending', 'success'
+  const [purchaseStatus, setPurchaseStatus] = useState('idle'); 
 
   useEffect(() => {
     const db = getDatabase();
@@ -301,9 +1136,54 @@ const Marketplace = ({ user, onLogout }) => {
   });
 
   const getIcon = (iconName) => {
-    const icons = { Shield, Zap, Layout, Box, FileText, Code, Globe };
+    const icons = { Shield, Zap, Layout, Box, FileText, Code, Globe, FileCode };
     const IconComponent = icons[iconName] || Box;
     return <IconComponent className="text-slate-700" size={24} />;
+  };
+
+  // --- LÓGICA DE SIMULACIÓN Y DESCARGA ---
+
+  const handleDownload = (service) => {
+    // Lógica para crear y disparar la descarga del archivo de código
+    const element = document.createElement("a");
+    const file = new Blob([service.codeSnippet], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    const extension = service.fileExtension || 'js';
+    element.download = `${service.title.replace(/\s+/g, '_').toLowerCase()}.${extension}`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    
+    alert(`¡Descarga de ${service.title} iniciada!`);
+  };
+
+  const handlePurchase = (service) => {
+    if (!user) {
+      alert('Debes iniciar sesión para adquirir este microservicio.');
+      return;
+    }
+
+    // 1. Adquisición GRATUITA: éxito inmediato
+    if (service.price === 0) {
+      setPurchaseStatus('success'); 
+      return;
+    }
+
+    // 2. Simulación de COMPRA (con precio > 0)
+    setPurchaseStatus('pending');
+
+    // Simular un proceso de pago de 3 segundos
+    setTimeout(() => {
+      // Aquí iría la integración real de pago
+      console.log(`Simulación de compra exitosa para: ${service.title}`);
+      setPurchaseStatus('success');
+    }, 3000);
+  };
+  
+  // Función para cerrar y resetear el modal
+  const handleCloseModal = () => {
+    setSelectedService(null);
+    setPurchaseStatus('idle'); // Resetear el estado de compra al cerrar
   };
 
   return (
@@ -372,7 +1252,7 @@ const Marketplace = ({ user, onLogout }) => {
 
       {/* Service Detail Modal */}
       {selectedService && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedService(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleCloseModal}>
           <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="relative h-64 bg-slate-900 flex items-center justify-center overflow-hidden rounded-t-2xl">
               {selectedService.imageUrl ? (
@@ -396,7 +1276,7 @@ const Marketplace = ({ user, onLogout }) => {
                 <h2 className="text-3xl font-bold">{selectedService.title}</h2>
               </div>
               <button
-                onClick={() => setSelectedService(null)}
+                onClick={handleCloseModal} // Usar la nueva función de cierre
                 className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white p-2 rounded-full transition backdrop-blur-sm"
               >
                 <X size={24} />
@@ -434,26 +1314,52 @@ const Marketplace = ({ user, onLogout }) => {
                       {selectedService.price === 0 ? 'Gratis' : `$${selectedService.price}`}
                     </span>
                   </div>
-                  <button className="w-full bg-cyan-500 text-white py-3 rounded-xl font-bold hover:bg-cyan-600 transition shadow-lg shadow-cyan-500/20 mb-3">
-                    Comprar Ahora
-                  </button>
-                  <button
-                    onClick={() => {
-                      const element = document.createElement("a");
-                      const file = new Blob([selectedService.codeSnippet], { type: 'text/javascript' });
-                      element.href = URL.createObjectURL(file);
-                      element.download = `${selectedService.title.replace(/\s+/g, '_').toLowerCase()}.js`;
-                      document.body.appendChild(element);
-                      element.click();
-                      document.body.removeChild(element);
-                    }}
-                    className="w-full bg-white text-slate-900 border-2 border-slate-200 py-3 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition mb-3 flex items-center justify-center"
-                  >
-                    <span className="mr-2">⬇️</span> Descargar Código
-                  </button>
-                  <p className="text-xs text-center text-gray-400">
-                    Compra segura garantizada por EduCodeHub
-                  </p>
+                  
+                  {/* Lógica de Botones según purchaseStatus */}
+                  
+                  {purchaseStatus === 'idle' && (
+                    <button 
+                      onClick={() => handlePurchase(selectedService)}
+                      disabled={purchaseStatus === 'pending'}
+                      className="w-full bg-cyan-500 text-white py-3 rounded-xl font-bold hover:bg-cyan-600 transition shadow-lg shadow-cyan-500/20 mb-3 disabled:bg-cyan-300 flex items-center justify-center"
+                    >
+                      {/* CAMBIO DE TEXTO: "Adquirir Gratis" para precio 0 */}
+                      {selectedService.price === 0 ? 'Adquirir Gratis' : 'Comprar Ahora'}
+                    </button>
+                  )}
+                  
+                  {purchaseStatus === 'pending' && (
+                    <button 
+                      disabled 
+                      className="w-full bg-yellow-500 text-white py-3 rounded-xl font-bold flex items-center justify-center mb-3"
+                    >
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {selectedService.price === 0 ? 'Procesando Adquisición...' : 'Procesando Pago...'}
+                    </button>
+                  )}
+                  
+                  {purchaseStatus === 'success' && (
+                    <div className="text-center mb-3">
+                      <div className="text-green-600 font-bold mb-3">
+                        {selectedService.price === 0 ? '¡Adquisición Exitosa!' : '¡Pago Completado!'}
+                      </div>
+                      <button
+                        onClick={() => handleDownload(selectedService)}
+                        className="w-full bg-green-500 text-white border-2 border-green-600 py-3 rounded-xl font-bold hover:bg-green-600 transition mb-3 flex items-center justify-center shadow-lg shadow-green-500/20"
+                      >
+                        <span className="mr-2">⬇️</span> Descargar {selectedService.fileExtension?.toUpperCase() || 'Archivo'}
+                      </button>
+                    </div>
+                  )}
+
+                  {purchaseStatus !== 'success' && (
+                    <p className="text-xs text-center text-gray-400">
+                      Compra segura garantizada por EduCodeHub
+                    </p>
+                  )}
                 </div>
 
                 <div className="border-t border-gray-100 pt-6">
